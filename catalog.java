@@ -1,71 +1,50 @@
 import java.math.BigInteger;
 import java.util.*;
-import java.util.regex.*;
 
 public class catalog {
     
     public static void main(String[] args) {
         Scanner scanner = new Scanner(System.in);
-        StringBuilder jsonInput = new StringBuilder();
         
-        System.out.println("Enter JSON input (type 'END' on new line to finish):");
-        String line;
-        while (!(line = scanner.nextLine()).equals("END")) {
-            jsonInput.append(line).append("\n");
+        System.out.print("Enter number of total roots (n): ");
+        int n = scanner.nextInt();
+        
+        System.out.print("Enter minimum roots required (k): ");
+        int k = scanner.nextInt();
+        
+        List<Point> points = new ArrayList<>();
+        
+        System.out.println("Enter " + n + " roots:");
+        for (int i = 0; i < n; i++) {
+            System.out.print("Root " + (i + 1) + " - x value: ");
+            int x = scanner.nextInt();
+            
+            System.out.print("Base: ");
+            int base = scanner.nextInt();
+            
+            System.out.print("Value: ");
+            String value = scanner.next();
+            
+            BigInteger y = decodeValue(value, base);
+            points.add(new Point(BigInteger.valueOf(x), y));
+            
+            System.out.println("Decoded: (" + x + ", " + y + ")");
         }
         
-        parseJsonAndSolve(jsonInput.toString());
+        points.sort((a, b) -> a.x.compareTo(b.x));
+        
+        List<Point> selectedPoints = points.subList(0, k);
+        
+        System.out.println("\nUsing first " + k + " points for interpolation:");
+        for (Point p : selectedPoints) {
+            System.out.println(p);
+        }
+        
+        BigInteger secret = lagrangeInterpolation(selectedPoints, BigInteger.ZERO);
+        
+        System.out.println("\nSecret (constant term): " + secret);
+        
         scanner.close();
-    }
-    
-    public static void parseJsonAndSolve(String jsonString) {
-        try {
-            Pattern nPattern = Pattern.compile("\"n\":\\s*(\\d+)");
-            Pattern kPattern = Pattern.compile("\"k\":\\s*(\\d+)");
-            
-            Matcher nMatcher = nPattern.matcher(jsonString);
-            Matcher kMatcher = kPattern.matcher(jsonString);
-            
-            int n = 0, k = 0;
-            if (nMatcher.find()) {
-                n = Integer.parseInt(nMatcher.group(1));
-            }
-            if (kMatcher.find()) {
-                k = Integer.parseInt(kMatcher.group(1));
-            }
-            
-            List<Point> points = new ArrayList<>();
-            
-            Pattern rootPattern = Pattern.compile("\"(\\d+)\":\\s*\\{[^}]*\"base\":\\s*\"(\\d+)\"[^}]*\"value\":\\s*\"([^\"]+)\"[^}]*\\}");
-            Matcher rootMatcher = rootPattern.matcher(jsonString);
-            
-            while (rootMatcher.find()) {
-                int x = Integer.parseInt(rootMatcher.group(1));
-                int base = Integer.parseInt(rootMatcher.group(2));
-                String value = rootMatcher.group(3);
-                
-                BigInteger y = decodeValue(value, base);
-                points.add(new Point(BigInteger.valueOf(x), y));
-                
-                System.out.println("Point " + x + ": base=" + base + ", value=" + value + " -> decoded=" + y);
-            }
-            
-            points.sort((a, b) -> a.x.compareTo(b.x));
-            
-            List<Point> selectedPoints = points.subList(0, Math.min(k, points.size()));
-            
-            System.out.println("\nUsing " + selectedPoints.size() + " points for Lagrange interpolation:");
-            for (Point p : selectedPoints) {
-                System.out.println("(" + p.x + ", " + p.y + ")");
-            }
-            
-            BigInteger secret = lagrangeInterpolation(selectedPoints, BigInteger.ZERO);
-            
-            System.out.println("\nSecret (constant term): " + secret);
-            
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
     }
     
     public static BigInteger decodeValue(String value, int base) {
